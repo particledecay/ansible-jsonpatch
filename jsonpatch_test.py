@@ -220,6 +220,7 @@ class TestJSONPatch(unittest.TestCase):
         jp = JSONPatcher(self.sample_json, *patches)
         self.assertRaises(PathError, jp.patch)
 
+    ## operation: test
     def test_op_test_string_equal(self):
         """Should return True that two strings are equal."""
         patches = [
