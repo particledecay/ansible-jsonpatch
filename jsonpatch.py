@@ -29,10 +29,14 @@ description:
     - Patch JSON documents using JSON Patch standard
     - RFC 6902: https://tools.ietf.org/html/rfc6902
 options:
-    file:
+    src:
         description:
-            - The path to a JSON file
+            - The path to the source JSON file
         required: True
+    dest:
+        description:
+            - The path to the destination JSON file
+        required: False
     operations:
         description:
             - A list of operations to perform on the JSON document
@@ -84,7 +88,7 @@ EXAMPLES = """
 #
 # # test if the "bar" object is enabled
 jsonpatch:
-  file: "test.json"
+  src: "test.json"
   operations:
     - op: test
       path: "/1/enabled"
@@ -92,7 +96,7 @@ jsonpatch:
 
 # add a fourth element to the "foo" object
 jsonpatch:
-  file: "test.json"
+  src: "test.json"
   operations:
     - op: add
       path: "/0/foo/four"
@@ -100,14 +104,14 @@ jsonpatch:
 
 # remove the first object in the "baz" list of fruits
 jsonpatch:
-  file: "test.json"
+  src: "test.json"
   operations:
     - op: remove
       path: "/2/baz/0"
 
 # move the "potatoes" value from the "baz" list to the "foo" object
 jsonpatch:
-  file: "test.json"
+  src: "test.json"
   operations:
     - op: move
       from: "/2/baz/2/bar"
@@ -115,7 +119,7 @@ jsonpatch:
 
 # test that the "foo" object has three members
 jsonpatch:
-  file: "test.json"
+  src: "test.json"
   operations:
     - op: test
       path: "/0/foo/one"
@@ -147,14 +151,20 @@ class PatchManager(object):
         self.module = module
 
         # validate file
-        self.file = self.module.params['file']
-        if not os.path.isfile(self.file):
-            self.module.fail_json(msg="could not find file at `%s`" % self.file)
+        self.src = self.module.params['src']
+        if not os.path.isfile(self.src):
+            self.module.fail_json(msg="could not find file at `%s`" % self.src)
+
+        # use 'src' as the output file, unless 'dest' is provided
+        self.outfile = self.src
+        self.dest = self.module.params.get('dest')
+        if self.dest is not None:
+            self.outfile = self.dest
 
         try:
-            self.json_doc = open(self.file).read()
+            self.json_doc = open(self.src).read()
         except IOError:
-            self.module.fail_json(msg="could not read file at `%s`" % self.file)
+            self.module.fail_json(msg="could not read file at `%s`" % self.src)
         
         self.operations = self.module.params['operations']
         try:
@@ -173,7 +183,7 @@ class PatchManager(object):
 
     def backup(self):
         """Create a backup copy of the JSON file."""
-        path = self.file
+        path = self.outfile
         counter = 0
         while os.path.exists("%s.bak" % path):
             path = "%s.%s" % (path, str(counter))
@@ -181,13 +191,13 @@ class PatchManager(object):
         filename = "%s.bak" % path
 
         with open(filename, "w") as bak:
-            bak.write(open(self.file, "r").read())
+            bak.write(open(self.outfile, "r").read())
 
     def write(self):
         if self.do_backup:  # backup first if needed
             self.backup()
         
-        with open(self.file, "w") as f:
+        with open(self.outfile, "w") as f:
             f.write(json.dumps(self.patcher.obj))
 
 
@@ -425,7 +435,8 @@ def main():
     # Parsing argument file
     module = basic.AnsibleModule(
         argument_spec=dict(
-            file=dict(required=True, type='str'),
+            src=dict(required=True, type='str'),
+            dest=dict(required=False, type='str'),
             operations=dict(required=True, type='list'),
             backup=dict(required=False, default=False, type='bool'),
         ),

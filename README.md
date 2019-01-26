@@ -11,9 +11,10 @@ The module `jsonpatch` takes the following options:
 
 | Name    | Description     | Choices |
 | ------- | --------------- | ------- |
-| `file` | The path to a file containing JSON | |
+| `src` | The path to a file containing JSON | |
+| `dest` | The path to an optional output file to write the patched JSON (default is to overwrite `src` file) |
 | `operations` | A list of valid operations to perform against the given JSON file | See [RFC 6902](https://tools.ietf.org/html/rfc6902#section-4) |
-| `backup` | Backup the JSON file before editing (default: `yes`) | `yes`/`no` |
+| `backup` | Backup the JSON file (the one that will be overwritten) before editing (default: `no`) | `yes`/`no` |
 
 #### Operations
 Operations may consist of two or more of the following properties:
@@ -43,7 +44,7 @@ There are two special notations:
 ```yaml
 - name: Add or replace 'baz' member
   jsonpatch:
-    file: "test.json"
+    src: "test.json"
     operations:
       - op: add
         path: "/baz"
@@ -69,7 +70,7 @@ There are two special notations:
 ```yaml
 - name: Remove the 'hello' property
   jsonpatch:
-    file: "test.json"
+    src: "test.json"
     operations:
       - op: remove
         path: "/1/hello"
@@ -99,7 +100,7 @@ There are two special notations:
 ```yaml
 - name: Ensure 'tomato' isn't listed as a vegetable
   jsonpatch:
-    file: "test.json"
+    src: "test.json"
     operations:
       - op: replace
         path: "/0/foo/2/vegetable"
@@ -130,7 +131,7 @@ There are two special notations:
 ```yaml
 - name: Move the numbers into their appropriate objects
   jsonpatch:
-    file: "test.json"
+    src: "test.json"
     operations:
       - op: move
         from: "/0/six"
@@ -159,7 +160,7 @@ There are two special notations:
 ```yaml
 - name: Correct the rating for The Dark Knight
   jsonpatch:
-    file: "test.json"
+    src: "test.json"
     backup: yes
     operations:
       - op: copy
@@ -187,7 +188,7 @@ There are two special notations:
 ```yaml
 - name: Ensure the Ansible project is enabled
   jsonpatch:
-    file: "test.json"
+    src: "test.json"
     operations:
       - op: test
         path: "/enabled"
@@ -211,7 +212,7 @@ There are two special notations:
 ```yaml
 - name: Add all of our movies to the list
   jsonpatch:
-    file: "test.json"
+    src: "test.json"
     operations:
       - op: add
         path: "/scan/-"
@@ -259,7 +260,7 @@ There are two special notations:
 ```yaml
 - name: Ensure The Last Samurai is definitely in our list
   jsonpatch:
-    file: "test.json"
+    src: "test.json"
     operations:
       - op: test
         path: "/scan/*/movie"
