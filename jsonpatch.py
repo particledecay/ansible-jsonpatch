@@ -1,33 +1,30 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
 # Copyright: (c) 2019, Joey Espinosa <jlouis.espinosa@gmail.com>
 # Copyright: (c) 2019, Ansible Project
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-import json
-import os
-
-from ansible.module_utils import basic
-from ansible.module_utils._text import to_bytes
+from __future__ import (absolute_import, division, print_function)
+__metaclass__ = type
 
 
-ANSIBLE_METADATA = {
-    'metadata_version': '1.1',
-    'status': ['preview'],
-    'supported_by': 'community'
-}
+ANSIBLE_METADATA = {'metadata_version': '1.1',
+                    'status': ['preview'],
+                    'supported_by': 'community'}
 
 
-DOCUMENTATION = """
+DOCUMENTATION = r'''
 ---
 module: jsonpatch
 author: "Joey Espinosa (@ParticleDecay)"
 short_description: Patch JSON documents
 requirements: []
-version_added: "2.7"
+version_added: "2.8"
 description:
     - Patch JSON documents using JSON Patch standard
-    - RFC 6902: https://tools.ietf.org/html/rfc6902
+    - "RFC 6901: https://tools.ietf.org/html/rfc6901"
+    - "RFC 6902: https://tools.ietf.org/html/rfc6902"
 options:
     src:
         description:
@@ -44,10 +41,10 @@ options:
     backup:
         description:
             - Copy the targeted file to a backup prior to patch
-"""
+'''
 
 
-EXAMPLES = """
+EXAMPLES = r'''
 # These examples are using the following JSON:
 #
 # [
@@ -84,53 +81,57 @@ EXAMPLES = """
 #     ],
 #     "enabled": true
 #   }
-# ] 
+# ]
 #
-# # test if the "bar" object is enabled
-jsonpatch:
-  src: "test.json"
-  operations:
-    - op: test
-      path: "/1/enabled"
-      value: true
+- name: add a fourth element to the "foo" object
+  jsonpatch:
+    src: "test.json"
+    dest: "test2.json"
+    operations:
+      - op: add
+        path: "/0/foo/four"
+        value: 4
 
-# add a fourth element to the "foo" object
-jsonpatch:
-  src: "test.json"
-  operations:
-    - op: add
-      path: "/0/foo/four"
-      value: 4
+- name: remove the first object in the "baz" list of fruits
+  jsonpatch:
+    src: "test.json"
+    operations:
+      - op: remove
+        path: "/2/baz/0"
 
-# remove the first object in the "baz" list of fruits
-jsonpatch:
-  src: "test.json"
-  operations:
-    - op: remove
-      path: "/2/baz/0"
+- name: move the "potatoes" value from the "baz" list to the "foo" object
+  jsonpatch:
+    src: "test.json"
+    backup: yes
+    operations:
+      - op: move
+        from: "/2/baz/2/bar"
+        path: "/0/foo/bar"
 
-# move the "potatoes" value from the "baz" list to the "foo" object
-jsonpatch:
-  src: "test.json"
-  operations:
-    - op: move
-      from: "/2/baz/2/bar"
-      path: "/0/foo/bar"
+- name: test that the "foo" object has three members
+  jsonpatch:
+    src: "test.json"
+    operations:
+      - op: test
+        path: "/0/foo/one"
+        value: 1
+      - op: test
+        path: "/0/foo/two"
+        value: 2
+      - op: test
+        path: "/0/foo/three"
+        value: 3
+'''
 
-# test that the "foo" object has three members
-jsonpatch:
-  src: "test.json"
-  operations:
-    - op: test
-      path: "/0/foo/one"
-      value: 1
-    - op: test
-      path: "/0/foo/two"
-      value: 2
-    - op: test
-      path: "/0/foo/three"
-      value: 3
-"""
+
+RETURN = r''' # '''
+
+
+import json
+import os
+
+from ansible.module_utils import basic
+from ansible.module_utils._text import to_bytes
 
 
 def set_module_args(args):
@@ -165,12 +166,12 @@ class PatchManager(object):
             self.json_doc = open(self.src).read()
         except IOError:
             self.module.fail_json(msg="could not read file at `%s`" % self.src)
-        
+
         self.operations = self.module.params['operations']
         try:
             self.patcher = JSONPatcher(self.json_doc, *self.operations)
         except Exception as e:
-            self.module.fail_json(msg=e.message)
+            self.module.fail_json(msg=str(e))
 
         self.do_backup = self.module.params.get('backup', False)
         self.changed = False
@@ -196,7 +197,7 @@ class PatchManager(object):
     def write(self):
         if self.do_backup:  # backup first if needed
             self.backup()
-        
+
         with open(self.outfile, "w") as f:
             f.write(json.dumps(self.patcher.obj))
 
@@ -223,11 +224,11 @@ class JSONPatcher(object):
         """
         if 'op' not in members:
             raise ValueError("'%s' is missing an 'op' member" % repr(members))
-        
+
         allowed_ops = ('add', 'remove', 'replace', 'move', 'copy', 'test')
         if members['op'] not in allowed_ops:
             raise ValueError("'%s' is not a valid patch operation" % members['op'])
-        
+
         if 'path' not in members:
             raise ValueError("'%s' is missing a 'path' member" % repr(members))
 
@@ -246,7 +247,7 @@ class JSONPatcher(object):
             if patch.get('from') is not None:
                 patch['from_path'] = patch['from']
                 del patch['from']
-            
+
             # attach object to patch operation (helpful for recursion)
             patch['obj'] = self.obj
             new_obj, changed = getattr(self, op)(**patch)
@@ -320,7 +321,7 @@ class JSONPatcher(object):
                         raise PathError("could not find index '%s' in JSON array" % path)
                 obj[int(path)], chg = self.add(remaining, value, next_obj)
             return obj, chg
-            
+
     def remove(self, path, obj, **discard):
         """Perform a 'remove' operation."""
         removed = None
@@ -364,7 +365,7 @@ class JSONPatcher(object):
 
     def replace(self, path, value, obj, **discard):
         """Perform a 'replace' operation."""
-        new_obj, _ = self.remove(path, obj)
+        new_obj, dummy = self.remove(path, obj)
         new_obj, chg = self.add(path, value, new_obj)
         return new_obj, chg
 
@@ -386,7 +387,7 @@ class JSONPatcher(object):
         This operation supports an additional feature not outlined in
         RFC 6901 (https://tools.ietf.org/html/rfc6901): The ability to
         reference every member of an array by using an asterisk (*).
-        
+
         In such a case, each member of the array at that point in the
         path will be tested sequentially for the given value, and if
         a matching value is found, the method will return immediately
@@ -412,7 +413,7 @@ class JSONPatcher(object):
                 if not isinstance(next_obj, list):
                     raise PathError("'*' does not refer to a JSON array")
                 for sub_obj in next_obj:
-                    _, found = self.test('/'.join(elements[(idx + 1):]), value, sub_obj)
+                    dummy, found = self.test('/'.join(elements[(idx + 1):]), value, sub_obj)
                     if found:
                         return obj, found
                 return obj, False
@@ -448,6 +449,7 @@ def main():
     result = {"changed": manager.changed}
 
     module.exit_json(**result)
+
 
 if __name__ == "__main__":
     main()
