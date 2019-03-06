@@ -15,6 +15,7 @@ The module `jsonpatch` takes the following options:
 | `dest` | The path to an optional output file to write the patched JSON (default is to overwrite `src` file) |
 | `operations` | A list of valid operations to perform against the given JSON file | See [RFC 6902](https://tools.ietf.org/html/rfc6902#section-4) |
 | `backup` | Backup the JSON file (the one that will be overwritten) before editing (default: `no`) | `yes`/`no` |
+| `pretty` | Pretty-print the JSON file (default: `no`) | `yes`/`no` |
 
 #### Operations
 Operations may consist of two or more of the following properties:
