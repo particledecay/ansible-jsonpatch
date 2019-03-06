@@ -41,6 +41,11 @@ options:
     backup:
         description:
             - Copy the targeted file to a backup prior to patch
+        required: False
+    pretty:
+        description:
+            - Pretty-print the JSON file
+        required: False
 '''
 
 
@@ -174,6 +179,7 @@ class PatchManager(object):
             self.module.fail_json(msg=str(e))
 
         self.do_backup = self.module.params.get('backup', False)
+        self.pretty_print = self.module.params.get('pretty', False)
         self.changed = False
 
     def run(self):
@@ -198,8 +204,9 @@ class PatchManager(object):
         if self.do_backup:  # backup first if needed
             self.backup()
 
+        indent = 2 if self.pretty_print else None
         with open(self.outfile, "w") as f:
-            f.write(json.dumps(self.patcher.obj))
+            f.write(json.dumps(self.patcher.obj, indent=indent))
 
 
 class JSONPatcher(object):
@@ -440,6 +447,7 @@ def main():
             dest=dict(required=False, type='str'),
             operations=dict(required=True, type='list'),
             backup=dict(required=False, default=False, type='bool'),
+            pretty=dict(required=False, default=False, type='bool'),
         ),
         supports_check_mode=False
     )
