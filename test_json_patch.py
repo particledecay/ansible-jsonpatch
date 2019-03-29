@@ -1,7 +1,7 @@
 import json
 import pytest
 
-from ansible.modules.files.jsonpatch import JSONPatcher, PathError
+from ansible.modules.files.json_patch import JSONPatcher, PathError
 
 
 sample_json = json.dumps([

@@ -16,7 +16,7 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 
 DOCUMENTATION = r'''
 ---
-module: jsonpatch
+module: json_patch
 author: "Joey Espinosa (@ParticleDecay)"
 short_description: Patch JSON documents
 requirements: []
@@ -84,7 +84,7 @@ EXAMPLES = r'''
 # ]
 #
 - name: add a fourth element to the "foo" object
-  jsonpatch:
+  json_patch:
     src: "test.json"
     dest: "test2.json"
     operations:
@@ -93,14 +93,14 @@ EXAMPLES = r'''
         value: 4
 
 - name: remove the first object in the "baz" list of fruits
-  jsonpatch:
+  json_patch:
     src: "test.json"
     operations:
       - op: remove
         path: "/2/baz/0"
 
 - name: move the "potatoes" value from the "baz" list to the "foo" object
-  jsonpatch:
+  json_patch:
     src: "test.json"
     backup: yes
     operations:
@@ -109,7 +109,7 @@ EXAMPLES = r'''
         path: "/0/foo/bar"
 
 - name: test that the "foo" object has three members
-  jsonpatch:
+  json_patch:
     src: "test.json"
     operations:
       - op: test

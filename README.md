@@ -7,7 +7,7 @@ This Ansible module follows [RFC 6901](https://tools.ietf.org/html/rfc6901) for 
 In addition to the standard, there is an extra notation feature not outlined in RFC 6901: you can specify *every* member of an array with a `*` character in the path.
 
 ## Usage
-The module `jsonpatch` takes the following options:
+The module `json_patch` takes the following options:
 
 | Name    | Description     | Choices |
 | ------- | --------------- | ------- |
@@ -43,7 +43,7 @@ There are two special notations:
 ##### Patch
 ```yaml
 - name: Add or replace 'baz' member
-  jsonpatch:
+  json_patch:
     src: "test.json"
     operations:
       - op: add
@@ -69,7 +69,7 @@ There are two special notations:
 ##### Patch
 ```yaml
 - name: Remove the 'hello' property
-  jsonpatch:
+  json_patch:
     src: "test.json"
     operations:
       - op: remove
@@ -99,7 +99,7 @@ There are two special notations:
 ##### Patch
 ```yaml
 - name: Ensure 'tomato' isn't listed as a vegetable
-  jsonpatch:
+  json_patch:
     src: "test.json"
     operations:
       - op: replace
@@ -130,7 +130,7 @@ There are two special notations:
 ##### Patch
 ```yaml
 - name: Move the numbers into their appropriate objects
-  jsonpatch:
+  json_patch:
     src: "test.json"
     operations:
       - op: move
@@ -159,7 +159,7 @@ There are two special notations:
 ##### Patch
 ```yaml
 - name: Correct the rating for The Dark Knight
-  jsonpatch:
+  json_patch:
     src: "test.json"
     backup: yes
     operations:
@@ -187,7 +187,7 @@ There are two special notations:
 ##### Patch
 ```yaml
 - name: Ensure the Ansible project is enabled
-  jsonpatch:
+  json_patch:
     src: "test.json"
     operations:
       - op: test
@@ -211,7 +211,7 @@ There are two special notations:
 ##### Patch
 ```yaml
 - name: Add all of our movies to the list
-  jsonpatch:
+  json_patch:
     src: "test.json"
     operations:
       - op: add
@@ -259,7 +259,7 @@ There are two special notations:
 ##### Patch
 ```yaml
 - name: Ensure The Last Samurai is definitely in our list
-  jsonpatch:
+  json_patch:
     src: "test.json"
     operations:
       - op: test
@@ -270,7 +270,7 @@ There are two special notations:
 ## Testing
 Testing is simple if you have Python installed:
 ```bash
-python jsonpatch_test.py
+python test_jsonpatch.py
 ```
 
 ## Contributing
