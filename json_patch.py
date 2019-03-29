@@ -41,6 +41,9 @@ options:
     backup:
         description:
             - Copy the targeted file to a backup prior to patch
+    unsafe_writes:
+        description:
+            - Allow Ansible to fall back to unsafe methods of writing files (some systems do not support atomic operations)
 '''
 
 
@@ -129,9 +132,10 @@ RETURN = r''' # '''
 
 import json
 import os
+import tempfile
 
 from ansible.module_utils import basic
-from ansible.module_utils._text import to_bytes
+from ansible.module_utils._text import to_bytes, to_native
 
 
 def set_module_args(args):
@@ -177,29 +181,29 @@ class PatchManager(object):
         self.changed = False
 
     def run(self):
-        self.changed = self.patcher.patch()
-        if self.changed:  # let's write the changes
-            self.write()
-        return self.changed
+        result = {'changed': self.patcher.patch()}
+        if result['changed']:  # let's write the changes
+            result.update(self.write())
+        return result
 
     def backup(self):
         """Create a backup copy of the JSON file."""
-        path = self.outfile
-        counter = 0
-        while os.path.exists("%s.bak" % path):
-            path = "%s.%s" % (path, str(counter))
-            counter += 1
-        filename = "%s.bak" % path
-
-        with open(filename, "w") as bak:
-            bak.write(open(self.outfile, "r").read())
+        return {'backup': self.module.backup_local(self.outfile)}
 
     def write(self):
+        result = {'dest': self.outfile}
         if self.do_backup:  # backup first if needed
-            self.backup()
+            result.update(self.backup())
 
-        with open(self.outfile, "w") as f:
+        tmpfd, tmpfile = tempfile.mkstemp()
+        with open(tmpfile, "w") as f:
             f.write(json.dumps(self.patcher.obj))
+
+        self.module.atomic_move(tmpfile,
+                                to_native(os.path.realpath(to_bytes(self.outfile, errors='surrogate_or_strict')), errors='surrogate_or_strict'),
+                                unsafe_writes=self.module.params['unsafe_writes'])
+
+        return result
 
 
 class JSONPatcher(object):
@@ -440,13 +444,13 @@ def main():
             dest=dict(required=False, type='str'),
             operations=dict(required=True, type='list'),
             backup=dict(required=False, default=False, type='bool'),
+            unsafe_writes=dict(required=False, default=False, type='bool'),
         ),
         supports_check_mode=False
     )
 
     manager = PatchManager(module)
-    manager.run()
-    result = {"changed": manager.changed}
+    result = manager.run()
 
     module.exit_json(**result)
 
