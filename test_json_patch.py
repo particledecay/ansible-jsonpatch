@@ -20,8 +20,9 @@ def test_op_add_foo_four():
         {"op": "add", "path": "/0/foo/four", "value": 4}
     ]
     jp = JSONPatcher(sample_json, *patches)
-    changed = jp.patch()
+    changed, tested = jp.patch()
     assert changed is True
+    assert tested is None
     assert jp.obj[0]['foo']['four'] == 4
 
 
@@ -31,8 +32,9 @@ def test_op_add_object_list():
         {"op": "add", "path": "/2/baz/0", "value": {"foo": "kiwis", "bar": "strawberries"}}
     ]
     jp = JSONPatcher(sample_json, *patches)
-    changed = jp.patch()
+    changed, tested = jp.patch()
     assert changed is True
+    assert tested is None
     assert jp.obj[2]['baz'][0] == patches[0]['value']
 
 
@@ -42,8 +44,9 @@ def test_op_add_object_end_of_list():
         {"op": "add", "path": "/2/baz/-", "value": {"foo": "raspberries", "bar": "blueberries"}}
     ]
     jp = JSONPatcher(sample_json, *patches)
-    changed = jp.patch()
+    changed, tested = jp.patch()
     assert changed is True
+    assert tested is None
     assert jp.obj[2]['baz'][-1] == patches[0]['value']
 
 
@@ -53,8 +56,9 @@ def test_op_add_replace_existing_value():
         {"op": "add", "path": "/1/bar/three", "value": 10}
     ]
     jp = JSONPatcher(sample_json, *patches)
-    changed = jp.patch()
+    changed, tested = jp.patch()
     assert changed is True
+    assert tested is None
     assert jp.obj[1]['bar']['three'] == 10
 
 
@@ -64,8 +68,9 @@ def test_op_add_ignore_existing_value():
         {"op": "add", "path": "/1/bar/one", "value": 1}
     ]
     jp = JSONPatcher(sample_json, *patches)
-    changed = jp.patch()
+    changed, tested = jp.patch()
     assert changed is False
+    assert tested is None
     assert jp.obj[1]['bar']['one'] == 1
 
 
@@ -76,8 +81,9 @@ def test_op_remove_foo_three():
         {"op": "remove", "path": "/0/foo/three"}
     ]
     jp = JSONPatcher(sample_json, *patches)
-    changed = jp.patch()
+    changed, tested = jp.patch()
     assert changed is True
+    assert tested is None
     assert 'three' not in jp.obj[0]['foo']
 
 
@@ -87,8 +93,9 @@ def test_op_remove_baz_list_member():
         {"op": "remove", "path": "/2/baz/2"}
     ]
     jp = JSONPatcher(sample_json, *patches)
-    changed = jp.patch()
+    changed, tested = jp.patch()
     assert changed is True
+    assert tested is None
     for obj in jp.obj[2]['baz']:
         assert obj['foo'] != 'bananas'
         assert obj['bar'] != 'potatoes'
@@ -111,8 +118,9 @@ def test_op_replace_foo_three():
         {"op": "replace", "path": "/0/foo/three", "value": "booyah"}
     ]
     jp = JSONPatcher(sample_json, *patches)
-    changed = jp.patch()
+    changed, tested = jp.patch()
     assert changed is True
+    assert tested is None
     assert jp.obj[0]['foo']['three'] == 'booyah'
 
 
@@ -133,8 +141,9 @@ def test_op_move_foo_three_bar_four():
         {"op": "move", "from": "/0/foo/three", "path": "/1/bar/four"}
     ]
     jp = JSONPatcher(sample_json, *patches)
-    changed = jp.patch()
+    changed, tested = jp.patch()
     assert changed is True
+    assert tested is None
     assert jp.obj[0]['foo'].get('three', 'DUMMY VALUE') == 'DUMMY VALUE'
     assert jp.obj[1]['bar']['four'] == 3
 
@@ -145,8 +154,9 @@ def test_op_move_baz_list_foo():
         {"op": "move", "from": "/2/baz", "path": "/0/foo/fruits"}
     ]
     jp = JSONPatcher(sample_json, *patches)
-    changed = jp.patch()
+    changed, tested = jp.patch()
     assert changed is True
+    assert tested is None
     assert jp.obj[2].get('baz', 'DUMMY VALUE') == 'DUMMY VALUE'
     assert len(jp.obj[0]['foo']['fruits']) == 3
 
@@ -167,8 +177,9 @@ def test_op_move_foo_object_end_of_list():
         {"op": "move", "from": "/0/foo/three", "path": "/2/baz/-"}
     ]
     jp = JSONPatcher(sample_json, *patches)
-    changed = jp.patch()
+    changed, tested = jp.patch()
     assert changed is True
+    assert tested is None
     assert jp.obj[0]['foo'].get('three', 'DUMMY VALUE') == 'DUMMY VALUE'
     assert jp.obj[2]['baz'][-1] == 3
 
@@ -180,8 +191,9 @@ def test_op_copy_foo_three_bar_four():
         {"op": "copy", "from": "/0/foo/three", "path": "/1/bar/four"}
     ]
     jp = JSONPatcher(sample_json, *patches)
-    changed = jp.patch()
+    changed, tested = jp.patch()
     assert changed is True
+    assert tested is None
     assert jp.obj[0]['foo']['three'] == 3
     assert jp.obj[1]['bar']['four'] == 3
 
@@ -192,8 +204,9 @@ def test_op_copy_baz_list_bar():
         {"op": "copy", "from": "/2/baz", "path": "/0/foo/fruits"}
     ]
     jp = JSONPatcher(sample_json, *patches)
-    changed = jp.patch()
+    changed, tested = jp.patch()
     assert changed is True
+    assert tested is None
     assert len(jp.obj[2]['baz']) == 3
     assert len(jp.obj[0]['foo']['fruits']) == 3
 
@@ -215,8 +228,9 @@ def test_op_test_string_equal():
         {"op": "test", "path": "/2/baz/0/foo", "value": "apples"}
     ]
     jp = JSONPatcher(sample_json, *patches)
-    result = jp.patch()
-    assert result is True
+    changed, tested = jp.patch()
+    assert changed is None
+    assert tested is True
 
 
 def test_op_test_string_unequal():
@@ -225,8 +239,9 @@ def test_op_test_string_unequal():
         {"op": "test", "path": "/2/baz/0/foo", "value": "bananas"}
     ]
     jp = JSONPatcher(sample_json, *patches)
-    result = jp.patch()
-    assert result is False
+    changed, tested = jp.patch()
+    assert changed is None
+    assert tested is False
 
 
 def test_op_test_number_equal():
@@ -235,8 +250,9 @@ def test_op_test_number_equal():
         {"op": "test", "path": "/0/foo/one", "value": 1}
     ]
     jp = JSONPatcher(sample_json, *patches)
-    result = jp.patch()
-    assert result is True
+    changed, tested = jp.patch()
+    assert changed is None
+    assert tested is True
 
 
 def test_op_test_number_unequal():
@@ -245,8 +261,9 @@ def test_op_test_number_unequal():
         {"op": "test", "path": "/0/foo/one", "value": "bananas"}
     ]
     jp = JSONPatcher(sample_json, *patches)
-    result = jp.patch()
-    assert result is False
+    changed, tested = jp.patch()
+    assert changed is None
+    assert tested is False
 
 
 def test_op_test_list_equal():
@@ -256,8 +273,9 @@ def test_op_test_list_equal():
         {"op": "test", "path": "/0/foo/compare", "value": [1, 2, 3]}
     ]
     jp = JSONPatcher(sample_json, *patches)
-    result = jp.patch()
-    assert result is True
+    changed, tested = jp.patch()
+    assert changed is True
+    assert tested is True
 
 
 def test_op_test_wildcard():
@@ -266,8 +284,9 @@ def test_op_test_wildcard():
         {"op": "test", "path": "/2/baz/*/foo", "value": "grapes"}
     ]
     jp = JSONPatcher(sample_json, *patches)
-    result = jp.patch()
-    assert result is True
+    changed, tested = jp.patch()
+    assert changed is None
+    assert tested is True
 
 
 def test_op_test_wildcard_not_found():
@@ -276,5 +295,18 @@ def test_op_test_wildcard_not_found():
         {"op": "test", "path": "/2/baz/*/bar", "value": "rocks"}
     ]
     jp = JSONPatcher(sample_json, *patches)
-    result = jp.patch()
-    assert result is False
+    changed, tested = jp.patch()
+    assert changed is None
+    assert tested is False
+
+
+def test_op_test_multiple_tests():
+    """Should return False if at least one test returns False."""
+    patches = [
+        {"op": "test", "path": "/0/foo/one", "value": 2},
+        {"op": "test", "path": "/1/bar/one", "value": 1}
+    ]
+    jp = JSONPatcher(sample_json, *patches)
+    changed, tested = jp.patch()
+    assert changed is None
+    assert tested is False

@@ -127,7 +127,24 @@ EXAMPLES = r'''
 '''
 
 
-RETURN = r''' # '''
+RETURN = r'''
+changed:
+    description: whether the JSON object was modified
+    returned: always
+    type: bool
+tested:
+    description: the result of any included test operation
+    returned: when test operation exists
+    type: bool
+backup:
+    description: the name of the backed up file
+    returned: when backup is true
+    type: str
+dest:
+    description: the name of the file that was written
+    returned: changed
+    type: str
+'''
 
 
 import json
@@ -178,10 +195,12 @@ class PatchManager(object):
             self.module.fail_json(msg=str(e))
 
         self.do_backup = self.module.params.get('backup', False)
-        self.changed = False
 
     def run(self):
-        result = {'changed': self.patcher.patch()}
+        changed, tested = self.patcher.patch()
+        result = {'changed': changed}
+        if tested is not None:
+            result['tested'] = tested
         if result['changed']:  # let's write the changes
             result.update(self.write())
         return result
@@ -242,7 +261,8 @@ class JSONPatcher(object):
 
     def patch(self):
         """Perform all of the given patch operations."""
-        modified = False  # whether we modified the object after all operations
+        modified = None  # whether we modified the object after all operations
+        test_result = None
         for patch in self.operations:
             op = patch['op']
             del patch['op']
@@ -254,11 +274,14 @@ class JSONPatcher(object):
 
             # attach object to patch operation (helpful for recursion)
             patch['obj'] = self.obj
-            new_obj, changed = getattr(self, op)(**patch)
-            if changed or op == "remove":  # 'remove' will fail if we don't actually remove anything
-                modified = True
-                self.obj = new_obj
-        return modified
+            new_obj, changed, tested = getattr(self, op)(**patch)
+            if changed is not None or op == "remove":  # 'remove' will fail if we don't actually remove anything
+                modified = bool(changed)
+                if modified is True:
+                    self.obj = new_obj
+            if tested is not None:
+                test_result = False if test_result is False else tested  # one false test fails everything
+        return modified, test_result
 
     def _get(self, path, obj, **discard):
         """Return a value at 'path'."""
@@ -288,7 +311,7 @@ class JSONPatcher(object):
                 obj[path] = value
                 if obj[path] != old_value:
                     chg = True
-                return obj, chg
+                return obj, chg, None
             elif isinstance(obj, list):
                 if path == "-":  # points to end of list
                     obj.append(value)
@@ -301,7 +324,7 @@ class JSONPatcher(object):
                         raise PathError("specified index '%s' cannot be greater than the number of elements in JSON array" % path)
                     obj.insert(idx, value)
                     chg = True
-                return obj, chg
+                return obj, chg, None
         else:  # traverse obj until last path member
             elements = path.split('/')
             path, remaining = elements[0], '/'.join(elements[1:])
@@ -312,7 +335,7 @@ class JSONPatcher(object):
                     next_obj = obj[path]
                 except KeyError:
                     raise PathError("could not find '%s' member in JSON object" % path)
-                obj[path], chg = self.add(remaining, value, next_obj)
+                obj[path], chg, tst = self.add(remaining, value, next_obj)
             elif isinstance(obj, list):
                 if not path.isdigit():
                     raise PathError("'%s' is not a valid index for a JSON array" % path)
@@ -323,8 +346,8 @@ class JSONPatcher(object):
                         raise PathError("specified index '%s' cannot be greater than the number of elements in JSON array" % path)
                     else:
                         raise PathError("could not find index '%s' in JSON array" % path)
-                obj[int(path)], chg = self.add(remaining, value, next_obj)
-            return obj, chg
+                obj[int(path)], chg, tst = self.add(remaining, value, next_obj)
+            return obj, chg, None
 
     def remove(self, path, obj, **discard):
         """Perform a 'remove' operation."""
@@ -342,7 +365,7 @@ class JSONPatcher(object):
                     removed = obj.pop(int(path))
                 except IndexError:
                     raise PathError("specified index '%s' was not found in JSON array" % path)
-            return obj, removed
+            return obj, removed, None
         else:  # traverse obj until last path member
             elements = path.split('/')
             path, remaining = elements[0], '/'.join(elements[1:])
@@ -353,7 +376,7 @@ class JSONPatcher(object):
                     next_obj = obj[path]
                 except KeyError:
                     raise PathError("could not find '%s' member in JSON object" % path)
-                obj[path], removed = self.remove(remaining, next_obj)
+                obj[path], removed, tst = self.remove(remaining, next_obj)
             elif isinstance(obj, list):
                 if not path.isdigit():
                     raise PathError("'%s' is not a valid index for a JSON array" % path)
@@ -364,26 +387,26 @@ class JSONPatcher(object):
                         raise PathError("specified index '%s' cannot be greater than the number of elements in JSON array" % path)
                     else:
                         raise PathError("could not find index '%s' in JSON array" % path)
-                obj[int(path)], removed = self.remove(remaining, next_obj)
-            return obj, removed
+                obj[int(path)], removed, tst = self.remove(remaining, next_obj)
+            return obj, removed, None
 
     def replace(self, path, value, obj, **discard):
         """Perform a 'replace' operation."""
-        new_obj, dummy = self.remove(path, obj)
-        new_obj, chg = self.add(path, value, new_obj)
-        return new_obj, chg
+        new_obj, dummy, tst = self.remove(path, obj)
+        new_obj, chg, tst = self.add(path, value, new_obj)
+        return new_obj, chg, None
 
     def move(self, from_path, path, obj, **discard):
         """Perform a 'move' operation."""
-        new_obj, removed = self.remove(from_path, obj)
-        new_obj, chg = self.add(path, removed, new_obj)
-        return new_obj, chg
+        new_obj, removed, tst = self.remove(from_path, obj)
+        new_obj, chg, tst = self.add(path, removed, new_obj)
+        return new_obj, chg, None
 
     def copy(self, from_path, path, obj, **discard):
         """Perform a 'copy' operation."""
         value = self._get(from_path, obj)
-        new_obj, chg = self.add(path, value, obj)
-        return new_obj, chg
+        new_obj, chg, tst = self.add(path, value, obj)
+        return new_obj, chg, None
 
     def test(self, path, value, obj, **discard):
         """Perform a 'test' operation.
@@ -417,23 +440,22 @@ class JSONPatcher(object):
                 if not isinstance(next_obj, list):
                     raise PathError("'*' does not refer to a JSON array")
                 for sub_obj in next_obj:
-                    dummy, found = self.test('/'.join(elements[(idx + 1):]), value, sub_obj)
+                    dummy, chg, found = self.test('/'.join(elements[(idx + 1):]), value, sub_obj)
                     if found:
-                        return obj, found
-                return obj, False
-            else:
+                        return obj, None, found
+                return obj, None, False
+            try:
+                next_obj = next_obj[elem]
+            except KeyError:
+                raise PathError("'%s' was not found in the JSON object" % elem)
+            except TypeError:  # it's a list
+                if not elem.isdigit():
+                    raise PathError("'%s' is not a valid index for a JSON array" % elem)
                 try:
-                    next_obj = next_obj[elem]
-                except KeyError:
-                    raise PathError("'%s' was not found in the JSON object" % elem)
-                except TypeError:  # it's a list
-                    if not elem.isdigit():
-                        raise PathError("'%s' is not a valid index for a JSON array" % elem)
-                    try:
-                        next_obj = next_obj[int(elem)]
-                    except IndexError:
-                        raise PathError("specified index '%s' was not found in JSON array" % elem)
-        return obj, next_obj == value
+                    next_obj = next_obj[int(elem)]
+                except IndexError:
+                    raise PathError("specified index '%s' was not found in JSON array" % elem)
+        return obj, None, next_obj == value
 
 
 def main():
