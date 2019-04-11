@@ -310,3 +310,13 @@ def test_op_test_multiple_tests():
     changed, tested = jp.patch()
     assert changed is None
     assert tested is False
+
+def test_op_test_nonexistent_member():
+    """Should return False even if path does not exist."""
+    patches = [
+        {"op": "test", "path": "/10/20/foo", "value": "bar"}
+    ]
+    jp = JSONPatcher(sample_json, *patches)
+    changed, tested = jp.patch()
+    assert changed is None
+    assert tested is False
