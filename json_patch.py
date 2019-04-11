@@ -211,6 +211,10 @@ class PatchManager(object):
 
     def write(self):
         result = {'dest': self.outfile}
+
+        if self.module.check_mode:  # stop here before doing anything permanent
+            return result
+
         if self.do_backup:  # backup first if needed
             result.update(self.backup())
 
@@ -468,7 +472,7 @@ def main():
             backup=dict(required=False, default=False, type='bool'),
             unsafe_writes=dict(required=False, default=False, type='bool'),
         ),
-        supports_check_mode=False
+        supports_check_mode=True
     )
 
     manager = PatchManager(module)
