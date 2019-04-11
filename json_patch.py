@@ -438,7 +438,7 @@ class JSONPatcher(object):
         for idx, elem in enumerate(elements):
             if elem == "*":  # wildcard
                 if not isinstance(next_obj, list):
-                    raise PathError("'*' does not refer to a JSON array")
+                    return obj, None, False
                 for sub_obj in next_obj:
                     dummy, chg, found = self.test('/'.join(elements[(idx + 1):]), value, sub_obj)
                     if found:
@@ -447,14 +447,14 @@ class JSONPatcher(object):
             try:
                 next_obj = next_obj[elem]
             except KeyError:
-                raise PathError("'%s' was not found in the JSON object" % elem)
+                return obj, None, False
             except TypeError:  # it's a list
                 if not elem.isdigit():
-                    raise PathError("'%s' is not a valid index for a JSON array" % elem)
+                    return obj, None, False
                 try:
                     next_obj = next_obj[int(elem)]
                 except IndexError:
-                    raise PathError("specified index '%s' was not found in JSON array" % elem)
+                    return obj, None, False
         return obj, None, next_obj == value
 
 
