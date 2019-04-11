@@ -311,6 +311,7 @@ def test_op_test_multiple_tests():
     assert changed is None
     assert tested is False
 
+
 def test_op_test_nonexistent_member():
     """Should return False even if path does not exist."""
     patches = [
