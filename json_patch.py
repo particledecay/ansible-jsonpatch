@@ -44,6 +44,9 @@ options:
     unsafe_writes:
         description:
             - Allow Ansible to fall back to unsafe methods of writing files (some systems do not support atomic operations)
+    pretty:
+        description:
+            - Write pretty-print JSON when file is changed
 '''
 
 
@@ -98,6 +101,7 @@ EXAMPLES = r'''
 - name: remove the first object in the "baz" list of fruits
   json_patch:
     src: "test.json"
+    pretty: yes
     operations:
       - op: remove
         path: "/2/baz/0"
@@ -195,6 +199,7 @@ class PatchManager(object):
             self.module.fail_json(msg=str(e))
 
         self.do_backup = self.module.params.get('backup', False)
+        self.pretty_print = self.module.params.get('pretty', False)
 
     def run(self):
         changed, tested = self.patcher.patch()
@@ -215,12 +220,16 @@ class PatchManager(object):
         if self.module.check_mode:  # stop here before doing anything permanent
             return result
 
+        dump_kwargs = {}
+        if self.pretty_print:
+            dump_kwargs.update({'indent': 4, 'separators': (',', ': ')})
+
         if self.do_backup:  # backup first if needed
             result.update(self.backup())
 
         tmpfd, tmpfile = tempfile.mkstemp()
         with open(tmpfile, "w") as f:
-            f.write(json.dumps(self.patcher.obj))
+            f.write(json.dumps(self.patcher.obj, **dump_kwargs))
 
         self.module.atomic_move(tmpfile,
                                 to_native(os.path.realpath(to_bytes(self.outfile, errors='surrogate_or_strict')), errors='surrogate_or_strict'),
@@ -471,6 +480,7 @@ def main():
             operations=dict(required=True, type='list'),
             backup=dict(required=False, default=False, type='bool'),
             unsafe_writes=dict(required=False, default=False, type='bool'),
+            pretty=dict(required=False, default=False, type='bool'),
         ),
         supports_check_mode=True
     )
