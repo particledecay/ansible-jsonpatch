@@ -6,6 +6,18 @@ This Ansible module follows [RFC 6901](https://tools.ietf.org/html/rfc6901) for 
 
 In addition to the standard, there is an extra notation feature not outlined in RFC 6901: you can specify *every* member of an array with a `*` character in the path.
 
+## Installation
+In order to make use of this module, download the [json_patch.py](https://raw.githubusercontent.com/ParticleDecay/ansible-jsonpatch/master/json_patch.py) file to the `library` directory in the root of your Ansible project:
+```
+myproject/
+├── ansible.cfg
+├── inv/
+├── library/
+│   ├── json_patch.py
+├── playbooks/
+├── roles/
+```
+
 ## Usage
 The module `json_patch` takes the following options:
 
