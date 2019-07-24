@@ -282,10 +282,11 @@ There are two special notations:
 ```
 
 ## Testing
-Testing is simple if you have Python installed:
+Testing is simple if you have pytest installed:
 ```bash
-python test_jsonpatch.py
+pytest
 ```
+Note you may have to copy the `json_patch.py` file into your Ansible installation's `lib/ansible/modules/files/` dir.
 
 ## Contributing
 PRs welcome! Just make sure you update tests as well.
@@ -296,6 +297,6 @@ Current needs:
   - `add` should affect every member of an array
   - `remove` should remove the path from each member of an array
   - `replace` should replace for each member of an array
-- Better `test` results
-  - Currently, when a test passes the `result.changed == True`. It may be more ideal to have something like `result.changed == False and result.tested == True`.
-- Support Ansible's [check mode](https://docs.ansible.com/ansible/latest/user_guide/playbooks_checkmode.html)
+- ~~Better `test` results~~
+  - ~~Currently, when a test passes the `result.changed == True`. It may be more ideal to have something like `result.changed == False and result.tested == True`.~~
+- ~~Support Ansible's [check mode](https://docs.ansible.com/ansible/latest/user_guide/playbooks_checkmode.html)~~
