@@ -3,6 +3,9 @@ import pytest
 
 from ansible.modules.files.json_patch import JSONPatcher, PathError
 
+from __future__ import (absolute_import, division, print_function)
+__metaclass__ = type
+
 
 sample_json = json.dumps([
     {"foo": {"one": 1, "two": 2, "three": 3}, "enabled": True},
