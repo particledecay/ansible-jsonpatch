@@ -44,15 +44,32 @@ options:
     backup:
         description:
             - Copy the targeted file to a backup prior to patch
+        required: False
         type: bool
     unsafe_writes:
         description:
             - Allow Ansible to fall back to unsafe methods of writing files (some systems do not support atomic operations)
+        required: False
         type: bool
     pretty:
         description:
             - Write pretty-print JSON when file is changed
+        required: False
         type: bool
+    create:
+        description:
+            - Create a file if it does not already exist
+        required: False
+        type: bool
+    create_type:
+        description:
+            - Initialize a newly created JSON file as an object or array
+        required: False
+        choices:
+            - "object"
+            - "array"
+        default: "object"
+        type: str
 '''
 
 
@@ -154,6 +171,10 @@ dest:
     description: the name of the file that was written
     returned: changed
     type: str
+created:
+    description: whether the file was newly created
+    returned: always
+    type: bool
 '''
 
 
@@ -181,11 +202,16 @@ class PatchManager(object):
 
     def __init__(self, module):
         self.module = module
+        self.create = self.module.params.get('create', False)
+        self.create_type = self.module.params.get('create_type', 'object').lower()
+        empty = False
 
         # validate file
         self.src = self.module.params['src']
         if not os.path.isfile(self.src):
-            self.module.fail_json(msg="could not find file at `%s`" % self.src)
+            if not self.create:
+                self.module.fail_json(msg="could not find file at `%s`" % self.src)
+            empty = True
 
         # use 'src' as the output file, unless 'dest' is provided
         self.outfile = self.src
@@ -194,9 +220,18 @@ class PatchManager(object):
             self.outfile = self.dest
 
         try:
-            self.json_doc = open(self.src).read()
+            self.json_doc = open(self.src).read() if not empty else ""
         except IOError:
             self.module.fail_json(msg="could not read file at `%s`" % self.src)
+
+        # create empty JSON if requested
+        if self.json_doc == "" and self.create:
+            if self.create_type == "object":
+                self.json_doc = "{}"
+            elif self.create_type == "array":
+                self.json_doc = "[]"
+            else:
+                self.module.fail_json(msg="invalid option for 'create_type': %s" % self.create_type)
 
         self.operations = self.module.params['operations']
         try:
@@ -251,7 +286,7 @@ class JSONPatcher(object):
         try:
             self.obj = json.loads(json_doc)  # let this fail if it must
         except (ValueError, TypeError):
-            raise Exception(msg="invalid JSON found")
+            raise Exception("invalid JSON found")
         self.operations = operations
 
         # validate all operations
@@ -506,6 +541,8 @@ def main():
             backup=dict(required=False, default=False, type='bool'),
             unsafe_writes=dict(required=False, default=False, type='bool'),
             pretty=dict(required=False, default=False, type='bool'),
+            create=dict(required=False, default=False, type='bool'),
+            create_type=dict(required=False, default='object', type='str'),
         ),
         supports_check_mode=True
     )
