@@ -26,9 +26,13 @@ The module `json_patch` takes the following options:
 | Name    | Description     | Choices |
 | ------- | --------------- | ------- |
 | `src` | The path to a file containing JSON | |
-| `dest` | The path to an optional output file to write the patched JSON (default is to overwrite `src` file) |
+| `dest` | The path to an optional output file to write the patched JSON (default is to overwrite `src` file) | |
 | `operations` | A list of valid operations to perform against the given JSON file | See [RFC 6902](https://tools.ietf.org/html/rfc6902#section-4) |
 | `backup` | Backup the JSON file (the one that will be overwritten) before editing (default: `no`) | `yes`/`no` |
+| `unsafe_writes` | Allow Ansible to fall back to unsafe (i.e. non-atomic) methods of writing files (default: `no`) | `yes`/`no` |
+| `pretty` | Write JSON output in human-readable format | `yes`/`no` |
+| `create` | Create file if it does not exist | `yes`/`no` |
+| `create_type` | Type of JSON structure to create if empty (default: `object`) | `object`/`array` |
 
 #### Operations
 Operations may consist of two or more of the following properties:
@@ -297,6 +301,3 @@ Current needs:
   - `add` should affect every member of an array
   - `remove` should remove the path from each member of an array
   - `replace` should replace for each member of an array
-- ~~Better `test` results~~
-  - ~~Currently, when a test passes the `result.changed == True`. It may be more ideal to have something like `result.changed == False and result.tested == True`.~~
-- ~~Support Ansible's [check mode](https://docs.ansible.com/ansible/latest/user_guide/playbooks_checkmode.html)~~
