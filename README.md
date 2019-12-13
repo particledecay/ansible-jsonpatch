@@ -1,8 +1,6 @@
 # ansible-jsonpatch
 An Ansible module for patching JSON files
 
-NOTE: This module is [currently being proposed](https://github.com/ansible/ansible/pull/52931) for inclusion into the main Ansible project
-
 ## Description
 This Ansible module follows [RFC 6901](https://tools.ietf.org/html/rfc6901) for JSON notation and [RFC 6902](https://tools.ietf.org/html/rfc6902) for JSON patching.
 
