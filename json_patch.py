@@ -3,7 +3,7 @@
 
 # Copyright: (c) 2019, Joey Espinosa <jlouis.espinosa@gmail.com>
 # Copyright: (c) 2019, Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# MIT License (https://opensource.org/licenses/MIT)
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
