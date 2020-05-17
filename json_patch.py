@@ -248,6 +248,16 @@ class PatchManager(object):
         if tested is not None:
             result['tested'] = tested
         if result['changed']:  # let's write the changes
+            dump_kwargs = {}
+            if self.pretty_print:
+                dump_kwargs.update({'indent': 4, 'separators': (',', ': ')})
+
+            result['diff'] = dict(
+                before=self.json_doc,
+                after=json.dumps(self.patcher.obj, **dump_kwargs),
+                before_header='%s (content)' % self.module.params['src'],
+                after_header='%s (content)' % self.module.params['src'],
+            )
             result.update(self.write())
         return result
 
