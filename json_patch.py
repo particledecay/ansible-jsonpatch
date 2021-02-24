@@ -312,7 +312,7 @@ class JSONPatcher(object):
         if 'op' not in members:
             raise ValueError("'%s' is missing an 'op' member" % repr(members))
 
-        allowed_ops = ('add', 'remove', 'replace', 'move', 'copy', 'test')
+        allowed_ops = ('add', 'remove', 'replace', 'move', 'copy', 'test', 'edit')
         if members['op'] not in allowed_ops:
             raise ValueError("'%s' is not a valid patch operation" % members['op'])
 
@@ -468,6 +468,16 @@ class JSONPatcher(object):
             return obj, False, None
         if old_value is None:  # the target location must exist for operation to be successful
             raise PathError("could not find '%s' member in JSON object" % path)
+        new_obj, dummy, tst = self.remove(path, obj)
+        new_obj, chg, tst = self.add(path, value, new_obj)
+        return new_obj, chg, None
+
+    # https://tools.ietf.org/html/rfc6902#section-4.3
+    def edit(self, path, value, obj, **discard):
+        """Perform a 'replace' operation which replace or create value."""
+        old_value = self._get(path, obj)
+        if old_value == value:
+            return obj, False, None
         new_obj, dummy, tst = self.remove(path, obj)
         new_obj, chg, tst = self.add(path, value, new_obj)
         return new_obj, chg, None

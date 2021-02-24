@@ -336,3 +336,27 @@ def test_op_test_nonexistent_member():
     changed, tested = jp.patch()
     assert changed is None
     assert tested is False
+
+# OPERATION: EDIT
+def test_op_edit_foo_three():
+    """Should edit the value for the 'three' member in 'foo'."""
+    patches = [
+        {"op": "edit", "path": "/0/foo/three", "value": "booyah1"}
+    ]
+    jp = JSONPatcher(sample_json, *patches)
+    changed, tested = jp.patch()
+    assert changed is True
+    assert tested is None
+    assert jp.obj[0]['foo']['three'] == 'booyah1'
+
+
+def test_op_edit_fail_on_nonexistent_path_or_member():
+    """Should raise an exception if any part of the referenced path does not exist (RFC 6902)."""
+    patches = [
+        {"op": "edit", "path": "/0/foo/fourNotExists", "value": 5}
+    ]
+    jp = JSONPatcher(sample_json, *patches)
+    changed, tested = jp.patch()
+    assert changed is True
+    assert tested is None
+    assert jp.obj[0]['foo']['fourNotExists'] == 5

@@ -37,7 +37,7 @@ Operations may consist of two or more of the following properties:
 
 | Name | Required | Value |
 | ---- | -------- | ----- |
-| `op` | yes | one of `add`, `remove`, `replace`, `move`, `copy`, or `test` |
+| `op` | yes | one of `add`, `remove`, `replace`, `edit`, `move`, `copy`, or `test` |
 | `path` | yes | RFC 6901 JSON notation |
 | `from` | no | RFC 6901 JSON notation (only applies to `move` and `copy`)|
 | `value` | no | any valid JSON value |
@@ -119,6 +119,14 @@ There are two special notations:
     src: "test.json"
     operations:
       - op: replace
+        path: "/0/foo/2/vegetable"
+        value: "cauliflower"
+# works even if not existing
+- name: Ensure 'tomato' isn't listed as a vegetable
+  json_patch:
+    src: "test.json"
+    operations:
+      - op: edit
         path: "/0/foo/2/vegetable"
         value: "cauliflower"
 ```
@@ -299,3 +307,4 @@ Current needs:
   - `add` should affect every member of an array
   - `remove` should remove the path from each member of an array
   - `replace` should replace for each member of an array
+  - `edit` should replace for each member of an array or create it if not already existing
