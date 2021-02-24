@@ -72,7 +72,7 @@ def test_op_add_ignore_existing_value():
     ]
     jp = JSONPatcher(sample_json, *patches)
     changed, tested = jp.patch()
-    assert changed is False
+    assert not changed
     assert tested is None
     assert jp.obj[1]['bar']['one'] == 1
 
@@ -182,7 +182,7 @@ def test_op_move_unchanged_on_nonexistent():
     ]
     jp = JSONPatcher(sample_json, *patches)
     changed, tested = jp.patch()
-    assert changed is False
+    assert not changed
     assert tested is None
 
 
