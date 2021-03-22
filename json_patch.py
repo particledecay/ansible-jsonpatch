@@ -278,7 +278,7 @@ class PatchManager(object):
         if self.do_backup:  # backup first if needed
             result.update(self.backup())
 
-        tmpfd, tmpfile = tempfile.mkstemp()
+        _, tmpfile = tempfile.mkstemp()
         with open(tmpfile, "w") as f:
             f.write(json.dumps(self.patcher.obj, **dump_kwargs))
 
@@ -404,7 +404,7 @@ class JSONPatcher(object):
                     next_obj = obj[path]
                 except KeyError:
                     raise PathError("could not find '%s' member in JSON object" % path)
-                obj[path], chg, tst = self.add(remaining, value, next_obj)
+                obj[path], chg, _ = self.add(remaining, value, next_obj)
             elif isinstance(obj, list):
                 if not path.isdigit():
                     raise PathError("'%s' is not a valid index for a JSON array" % path)
@@ -446,7 +446,7 @@ class JSONPatcher(object):
                     next_obj = obj[path]
                 except KeyError:
                     raise PathError("could not find '%s' member in JSON object" % path)
-                obj[path], removed, tst = self.remove(remaining, next_obj)
+                obj[path], removed, _ = self.remove(remaining, next_obj)
             elif isinstance(obj, list):
                 if not path.isdigit():
                     raise PathError("'%s' is not a valid index for a JSON array" % path)
@@ -468,7 +468,7 @@ class JSONPatcher(object):
             return obj, False, None
         if old_value is None:  # the target location must exist for operation to be successful
             raise PathError("could not find '%s' member in JSON object" % path)
-        new_obj, dummy, tst = self.remove(path, obj)
+        new_obj, dummy, _ = self.remove(path, obj)
         new_obj, chg, tst = self.add(path, value, new_obj)
         return new_obj, chg, None
 
@@ -476,7 +476,7 @@ class JSONPatcher(object):
     def move(self, from_path, path, obj, **discard):
         """Perform a 'move' operation."""
         chg = False
-        new_obj, removed, tst = self.remove(from_path, obj)
+        new_obj, removed, _ = self.remove(from_path, obj)
         if removed is not None:  # don't inadvertently add 'None' as a value somewhere
             new_obj, chg, tst = self.add(path, removed, new_obj)
         return new_obj, chg, None
@@ -487,7 +487,7 @@ class JSONPatcher(object):
         value = self._get(from_path, obj)
         if value is None:
             raise PathError("could not find '%s' member in JSON object" % path)
-        new_obj, chg, tst = self.add(path, value, obj)
+        new_obj, chg, _ = self.add(path, value, obj)
         return new_obj, chg, None
 
     # https://tools.ietf.org/html/rfc6902#section-4.6
@@ -523,7 +523,7 @@ class JSONPatcher(object):
                 if not isinstance(next_obj, list):
                     return obj, None, False
                 for sub_obj in next_obj:
-                    dummy, chg, found = self.test('/'.join(elements[(idx + 1):]), value, sub_obj)
+                    dummy, _, found = self.test('/'.join(elements[(idx + 1):]), value, sub_obj)
                     if found:
                         return obj, None, found
                 return obj, None, False
