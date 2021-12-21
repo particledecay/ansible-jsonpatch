@@ -70,6 +70,12 @@ options:
             - "array"
         default: "object"
         type: str
+    ensure_ascii:
+        description:
+            - Produce output with all non-ASCII characters escaped; otherwise, output character as-is
+        required: False
+        default: True
+        type: bool
 '''
 
 
@@ -241,6 +247,7 @@ class PatchManager(object):
 
         self.do_backup = self.module.params.get('backup', False)
         self.pretty_print = self.module.params.get('pretty', False)
+        self.ensure_ascii = self.module.params.get('ensure_ascii', True)
 
     def run(self):
         changed, tested = self.patcher.patch()
@@ -248,7 +255,7 @@ class PatchManager(object):
         if tested is not None:
             result['tested'] = tested
         if result['changed']:  # let's write the changes
-            dump_kwargs = {}
+            dump_kwargs = {'ensure_ascii': self.ensure_ascii}
             if self.pretty_print:
                 dump_kwargs.update({'indent': 4, 'separators': (',', ': ')})
 
@@ -271,7 +278,7 @@ class PatchManager(object):
         if self.module.check_mode:  # stop here before doing anything permanent
             return result
 
-        dump_kwargs = {}
+        dump_kwargs = {'ensure_ascii': self.ensure_ascii}
         if self.pretty_print:
             dump_kwargs.update({'indent': 4, 'separators': (',', ': ')})
 
@@ -553,6 +560,7 @@ def main():
             pretty=dict(required=False, default=False, type='bool'),
             create=dict(required=False, default=False, type='bool'),
             create_type=dict(required=False, default='object', type='str'),
+            ensure_ascii=dict(required=False, default=True, type='bool'),
         ),
         supports_check_mode=True
     )

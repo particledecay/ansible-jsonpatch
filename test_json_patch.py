@@ -2,7 +2,7 @@ from __future__ import (absolute_import, division, print_function)
 import json
 import pytest
 
-from ansible.modules.files.json_patch import JSONPatcher, PathError
+from ansible.modules.files.json_patch import JSONPatcher, PathError, PatchManager
 
 __metaclass__ = type
 
@@ -336,3 +336,26 @@ def test_op_test_nonexistent_member():
     changed, tested = jp.patch()
     assert changed is None
     assert tested is False
+
+
+# dumped as '{"name": "M\\u00e4rz_Lebensmittel", "group": "foo"}'
+non_ascii_json_contains_escape = json.dumps(
+    {"name": "März_Lebensmittel", "group": "foo"}
+)
+
+# dumped as '{"name": "März_Lebensmittel", "group": "foo"}'
+non_ascii_json_as_is = json.dumps(
+    {"name": "März_Lebensmittel", "group": "foo"},
+    ensure_ascii=False
+)
+
+# N.B. we could use pytest tmp_path but that is Python3-only
+@pytest.mark.parametrize("sample", [non_ascii_json_contains_escape, non_ascii_json_as_is])
+def test_ensure_ascii_false(sample):
+    """Test ensure_ascii=false outputs non-ASCII literals as-is."""
+    patches = [
+        {"op": "replace", "path": "/group", "value": "bar"}
+    ]
+    # We cannot use the standard jp.patch() here since we want to test
+    # the actual string/stream output rather than the resulting Python object
+    raise Exception("write me")
