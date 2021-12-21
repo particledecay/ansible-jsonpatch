@@ -31,6 +31,7 @@ The module `json_patch` takes the following options:
 | `pretty` | Write JSON output in human-readable format | `yes`/`no` |
 | `create` | Create file if it does not exist | `yes`/`no` |
 | `create_type` | Type of JSON structure to create if empty (default: `object`) | `object`/`array` |
+| `ensure_ascii` | Produce output with all non-ASCII characters escaped; otherwise, output character as-is |
 
 #### Operations
 Operations may consist of two or more of the following properties:
