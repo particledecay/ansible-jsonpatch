@@ -325,7 +325,7 @@ class JSONPatcher(object):
 
     def patch(self):
         """Perform all of the given patch operations."""
-        modified = None  # whether we modified the object after all operations
+        modified = False  # whether we modified the object after all operations
         test_result = None
         for patch in self.operations:
             op = patch['op']
@@ -339,8 +339,8 @@ class JSONPatcher(object):
             # attach object to patch operation (helpful for recursion)
             patch['obj'] = self.obj
             new_obj, changed, tested = getattr(self, op)(**patch)
+            modified = bool(changed)
             if changed or op == "remove":  # 'remove' will fail if we don't actually remove anything
-                modified = bool(changed)
                 if modified is True:
                     self.obj = new_obj
             if tested is not None:
@@ -403,7 +403,8 @@ class JSONPatcher(object):
                 try:
                     next_obj = obj[path]
                 except KeyError:
-                    raise PathError("could not find '%s' member in JSON object" % path)
+                    # The path is missing, but lets create it
+                    next_obj = {}
                 obj[path], chg, _ = self.add(remaining, value, next_obj)
             elif isinstance(obj, list):
                 if not path.isdigit():
