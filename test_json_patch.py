@@ -2,7 +2,7 @@ from __future__ import (absolute_import, division, print_function)
 import json
 import pytest
 
-from ansible.modules.files.json_patch import JSONPatcher, PathError
+from json_patch import JSONPatcher, PathError
 
 __metaclass__ = type
 
