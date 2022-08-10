@@ -52,6 +52,29 @@ def test_op_add_object_end_of_list():
     assert tested is None
     assert jp.obj[2]['baz'][-1] == patches[0]['value']
 
+def test_op_add_create_parents():
+    """should add all missing parent objects in the path"""
+    patches = [
+        {"op": "add", "path": "/2/foo/bar/qwerty", "value": {"foo": "bar"}}
+    ]
+    jp = JSONPatcher(sample_json, *patches)
+    changed, tested = jp.patch()
+    assert changed is True
+    assert tested is None
+    print(jp.obj)
+    assert jp.obj[2]['foo']['bar']['qwerty'] == patches[0]['value']
+
+def test_op_shouldnt_overwrite_path_if_hitting_literal():
+    """shouldnt overwrite values in the middle of the path"""
+    patches = [
+        {"op": "add", "path": "/0/foo/one/incorrectpath/subpath", "value": {"foo": "bar"}}
+    ]
+    jp = JSONPatcher(sample_json, *patches)
+    changed, tested = jp.patch()
+    assert changed is False
+    assert tested is None
+    print(jp.obj)
+    assert jp.obj[0]['foo']['one'] == 1 # The value shouldnt have been overwritten with the value in the patch
 
 def test_op_add_replace_existing_value():
     """Should find an existing property and replace its value."""

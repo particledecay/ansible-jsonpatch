@@ -403,7 +403,8 @@ class JSONPatcher(object):
                 try:
                     next_obj = obj[path]
                 except KeyError:
-                    raise PathError("could not find '%s' member in JSON object" % path)
+                    # The path is missing, but lets create it
+                    next_obj = {}
                 obj[path], chg, _ = self.add(remaining, value, next_obj)
             elif isinstance(obj, list):
                 if not path.isdigit():
