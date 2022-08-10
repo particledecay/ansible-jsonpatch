@@ -8,12 +8,13 @@ __metaclass__ = type
 
 
 sample_json = json.dumps([
-    {"foo": {"one": 1, "two": 2, "three": 3}, "enabled": True},
-    {"bar": {"one": 1, "two": 2, "three": 3}, "enabled": False},
-    {"baz": [{"foo": "apples", "bar": "oranges"},
+    { "foo": {"one": 1, "two": 2, "three": 3}, "enabled": True},
+    { "bar": {"one": 1, "two": 2, "three": 3}, "enabled": False},
+    { "baz": [{"foo": "apples", "bar": "oranges"},
              {"foo": "grapes", "bar": "oranges"},
              {"foo": "bananas", "bar": "potatoes"}],
-     "enabled": False}])
+      "enabled": False}
+     ])
 
 
 # OPERATION: ADD
