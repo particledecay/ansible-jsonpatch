@@ -62,7 +62,6 @@ def test_op_add_create_parents():
     changed, tested = jp.patch()
     assert changed is True
     assert tested is None
-    print(jp.obj)
     assert jp.obj[2]['foo']['bar']['qwerty'] == patches[0]['value']
 
 def test_op_shouldnt_overwrite_path_if_hitting_literal():
@@ -74,7 +73,6 @@ def test_op_shouldnt_overwrite_path_if_hitting_literal():
     changed, tested = jp.patch()
     assert changed is False
     assert tested is None
-    print(jp.obj)
     assert jp.obj[0]['foo']['one'] == 1 # The value shouldnt have been overwritten with the value in the patch
 
 def test_op_add_replace_existing_value():
