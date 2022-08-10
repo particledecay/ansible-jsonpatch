@@ -244,7 +244,7 @@ def test_op_test_string_equal():
     ]
     jp = JSONPatcher(sample_json, *patches)
     changed, tested = jp.patch()
-    assert changed is None
+    assert changed is False
     assert tested is True
 
 
@@ -255,7 +255,7 @@ def test_op_test_string_unequal():
     ]
     jp = JSONPatcher(sample_json, *patches)
     changed, tested = jp.patch()
-    assert changed is None
+    assert changed is False
     assert tested is False
 
 
@@ -266,7 +266,7 @@ def test_op_test_number_equal():
     ]
     jp = JSONPatcher(sample_json, *patches)
     changed, tested = jp.patch()
-    assert changed is None
+    assert changed is False
     assert tested is True
 
 
@@ -277,7 +277,7 @@ def test_op_test_number_unequal():
     ]
     jp = JSONPatcher(sample_json, *patches)
     changed, tested = jp.patch()
-    assert changed is None
+    assert changed is False
     assert tested is False
 
 
@@ -289,7 +289,7 @@ def test_op_test_list_equal():
     ]
     jp = JSONPatcher(sample_json, *patches)
     changed, tested = jp.patch()
-    assert changed is True
+    assert changed is False
     assert tested is True
 
 
@@ -300,7 +300,7 @@ def test_op_test_wildcard():
     ]
     jp = JSONPatcher(sample_json, *patches)
     changed, tested = jp.patch()
-    assert changed is None
+    assert changed is False
     assert tested is True
 
 
@@ -311,7 +311,7 @@ def test_op_test_wildcard_not_found():
     ]
     jp = JSONPatcher(sample_json, *patches)
     changed, tested = jp.patch()
-    assert changed is None
+    assert changed is False
     assert tested is False
 
 
@@ -323,7 +323,7 @@ def test_op_test_multiple_tests():
     ]
     jp = JSONPatcher(sample_json, *patches)
     changed, tested = jp.patch()
-    assert changed is None
+    assert changed is False
     assert tested is False
 
 
@@ -334,5 +334,5 @@ def test_op_test_nonexistent_member():
     ]
     jp = JSONPatcher(sample_json, *patches)
     changed, tested = jp.patch()
-    assert changed is None
+    assert changed is False
     assert tested is False
