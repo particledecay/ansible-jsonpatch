@@ -18,6 +18,13 @@ myproject/
 ├── roles/
 ```
 
+Make sure that the directory is pointed to in the `ansible.cfg`:
+
+```ini
+[defaults]
+library = ./library
+```
+
 ## Usage
 The module `json_patch` takes the following options:
 
