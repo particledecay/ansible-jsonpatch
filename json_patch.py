@@ -4,7 +4,6 @@
 # Copyright: (c) 2019, Joey Espinosa <jlouis.espinosa@gmail.com>
 # Copyright: (c) 2019, Ansible Project
 # MIT License (https://opensource.org/licenses/MIT)
-
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
@@ -339,7 +338,7 @@ class JSONPatcher(object):
             # attach object to patch operation (helpful for recursion)
             patch['obj'] = self.obj
             new_obj, changed, tested = getattr(self, op)(**patch)
-            if changed or op == "remove":  # 'remove' will fail if we don't actually remove anything
+            if changed or op in ["remove", "add", "move"]:  # 'remove', 'add' and 'move' will fail if we don't actually remove anything
                 modified = bool(changed)
                 if modified is True:
                     self.obj = new_obj

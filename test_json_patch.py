@@ -2,7 +2,11 @@ from __future__ import (absolute_import, division, print_function)
 import json
 import pytest
 
-from ansible.modules.files.json_patch import JSONPatcher, PathError
+# Will work both if installed in ansible and in the local folder
+try:
+    from ansible.modules.files.json_patch import JSONPatcher, PathError
+except ImportError:
+    from json_patch import JSONPatcher, PathError
 
 __metaclass__ = type
 
@@ -294,6 +298,28 @@ def test_op_test_list_equal():
 
 
 def test_op_test_wildcard():
+    """Should find an element in the 'baz' list with the matching value."""
+    patches = [
+        {"op": "test", "path": "/2/baz/*/foo", "value": "grapes"}
+    ]
+    jp = JSONPatcher(sample_json, *patches)
+    changed, tested = jp.patch()
+    assert changed is None
+    assert tested is True
+
+
+def test_op_test_wildcard_list():
+    """Should find an element in the 'baz' list with the matching value."""
+    patches = [
+        {"op": "test", "path": "/2/baz/*/foo", "value": "grapes"}
+    ]
+    jp = JSONPatcher(sample_json, *patches)
+    changed, tested = jp.patch()
+    assert changed is None
+    assert tested is True
+
+
+def test_op_test_wildcard_list_not_found():
     """Should find an element in the 'baz' list with the matching value."""
     patches = [
         {"op": "test", "path": "/2/baz/*/foo", "value": "grapes"}
