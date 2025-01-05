@@ -41,6 +41,11 @@ options:
             - A list of operations to perform on the JSON document
         required: True
         type: list
+    create_parents:
+        description:
+            - For add operations, create any parent objects/arrays in the JSON-Pointer which do not yet exist (against Section 4.1 of RFC6902)
+        required: False
+        type: bool
     backup:
         description:
             - Copy the targeted file to a backup prior to patch
@@ -233,9 +238,11 @@ class PatchManager(object):
             else:
                 self.module.fail_json(msg="invalid option for 'create_type': %s" % self.create_type)
 
+        self.create_parents = bool(self.module.params.get('create_parents'))
+
         self.operations = self.module.params['operations']
         try:
-            self.patcher = JSONPatcher(self.json_doc, *self.operations)
+            self.patcher = JSONPatcher(self.json_doc, self.create_parents, *self.operations)
         except Exception as e:
             self.module.fail_json(msg=str(e))
 
@@ -292,12 +299,13 @@ class PatchManager(object):
 class JSONPatcher(object):
     """Patch JSON documents according to RFC 6902."""
 
-    def __init__(self, json_doc, *operations):
+    def __init__(self, json_doc, create_parents, *operations):
         try:
             self.obj = json.loads(json_doc)  # let this fail if it must
         except (ValueError, TypeError):
             raise Exception("invalid JSON found")
         self.operations = operations
+        self.create_parents = create_parents
 
         # validate all operations
         for op in self.operations:
@@ -336,6 +344,8 @@ class JSONPatcher(object):
                 patch['from_path'] = patch['from']
                 del patch['from']
 
+            patch['create_parents'] = self.create_parents
+
             # attach object to patch operation (helpful for recursion)
             patch['obj'] = self.obj
             new_obj, changed, tested = getattr(self, op)(**patch)
@@ -370,7 +380,7 @@ class JSONPatcher(object):
         return next_obj
 
     # https://tools.ietf.org/html/rfc6902#section-4.1
-    def add(self, path, value, obj, **discard):
+    def add(self, path, value, obj, create_parents, **discard):
         """Perform an 'add' operation."""
         chg = False
         path = path.lstrip('/')
@@ -403,9 +413,23 @@ class JSONPatcher(object):
                 try:
                     next_obj = obj[path]
                 except KeyError:
-                    raise PathError("could not find '%s' member in JSON object" % path)
-                obj[path], chg, _ = self.add(remaining, value, next_obj)
+                    next_path = elements[1]
+                    if not create_parents or (next_path.isdigit() and next_path != "0"):
+                        raise PathError("could not find '%s' member in JSON object" % path)
+                    # Create the parent
+                    if next_path in ["0", "-"]:
+                        next_obj = obj[path] = []
+                    else:
+                        next_obj = obj[path] = {}
+                obj[path], chg, _ = self.add(remaining, value, next_obj, create_parents)
             elif isinstance(obj, list):
+                if create_parents:
+                    if path == "-" or (len(obj) == 0 and path == "0"):
+                        if elements[1] in ["0", "-"]:
+                            obj.append([])
+                        else:
+                            obj.append({})
+                        path = str(len(obj) - 1)
                 if not path.isdigit():
                     raise PathError("'%s' is not a valid index for a JSON array" % path)
                 try:
@@ -415,7 +439,7 @@ class JSONPatcher(object):
                         raise PathError("specified index '%s' cannot be greater than the number of elements in JSON array" % path)
                     else:
                         raise PathError("could not find index '%s' in JSON array" % path)
-                obj[int(path)], chg, tst = self.add(remaining, value, next_obj)
+                obj[int(path)], chg, tst = self.add(remaining, value, next_obj, create_parents)
             return obj, chg, None
 
     # https://tools.ietf.org/html/rfc6902#section-4.2
@@ -469,7 +493,7 @@ class JSONPatcher(object):
         if old_value is None:  # the target location must exist for operation to be successful
             raise PathError("could not find '%s' member in JSON object" % path)
         new_obj, dummy, _ = self.remove(path, obj)
-        new_obj, chg, tst = self.add(path, value, new_obj)
+        new_obj, chg, tst = self.add(path, value, new_obj, False)
         return new_obj, chg, None
 
     # https://tools.ietf.org/html/rfc6902#section-4.4
@@ -478,7 +502,7 @@ class JSONPatcher(object):
         chg = False
         new_obj, removed, _ = self.remove(from_path, obj)
         if removed is not None:  # don't inadvertently add 'None' as a value somewhere
-            new_obj, chg, tst = self.add(path, removed, new_obj)
+            new_obj, chg, tst = self.add(path, removed, new_obj, False)
         return new_obj, chg, None
 
     # https://tools.ietf.org/html/rfc6902#section-4.5
@@ -487,7 +511,7 @@ class JSONPatcher(object):
         value = self._get(from_path, obj)
         if value is None:
             raise PathError("could not find '%s' member in JSON object" % path)
-        new_obj, chg, _ = self.add(path, value, obj)
+        new_obj, chg, _ = self.add(path, value, obj, False)
         return new_obj, chg, None
 
     # https://tools.ietf.org/html/rfc6902#section-4.6
@@ -552,6 +576,7 @@ def main():
             unsafe_writes=dict(required=False, default=False, type='bool'),
             pretty=dict(required=False, default=False, type='bool'),
             create=dict(required=False, default=False, type='bool'),
+            create_parents=dict(required=False, default=False, type='bool'),
             create_type=dict(required=False, default='object', type='str'),
         ),
         supports_check_mode=True

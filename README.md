@@ -26,6 +26,7 @@ The module `json_patch` takes the following options:
 | `src` | The path to a file containing JSON | |
 | `dest` | The path to an optional output file to write the patched JSON (default is to overwrite `src` file) | |
 | `operations` | A list of valid operations to perform against the given JSON file | See [RFC 6902](https://tools.ietf.org/html/rfc6902#section-4) |
+| `create_parents` | For add operations, create any parent objects/arrays in the JSON-Pointer which do not yet exist (against Section 4.1 of RFC6902) (default: `no`) | `yes`/`no` |
 | `backup` | Backup the JSON file (the one that will be overwritten) before editing (default: `no`) | `yes`/`no` |
 | `unsafe_writes` | Allow Ansible to fall back to unsafe (i.e. non-atomic) methods of writing files (default: `no`) | `yes`/`no` |
 | `pretty` | Write JSON output in human-readable format | `yes`/`no` |
