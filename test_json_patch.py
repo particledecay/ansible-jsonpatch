@@ -2,7 +2,11 @@ from __future__ import (absolute_import, division, print_function)
 import json
 import pytest
 
-from ansible.modules.files.json_patch import JSONPatcher, PathError
+# Will work both if installed in ansible and in the local folder
+try:
+    from ansible.modules.files.json_patch import JSONPatcher, PathError
+except ImportError:
+    from json_patch import JSONPatcher, PathError
 
 __metaclass__ = type
 
@@ -13,7 +17,9 @@ sample_json = json.dumps([
     {"baz": [{"foo": "apples", "bar": "oranges"},
              {"foo": "grapes", "bar": "oranges"},
              {"foo": "bananas", "bar": "potatoes"}],
-     "enabled": False}])
+     "enabled": False},
+    {"bar": ["foo", "bar", "baz", "baza", "baza", "bazb"],  "enabled": False}
+    ])
 
 
 # OPERATION: ADD
@@ -245,7 +251,7 @@ def test_op_test_string_equal():
     jp = JSONPatcher(sample_json, *patches)
     changed, tested = jp.patch()
     assert changed is None
-    assert tested is True
+    assert tested[0] is True
 
 
 def test_op_test_string_unequal():
@@ -256,7 +262,7 @@ def test_op_test_string_unequal():
     jp = JSONPatcher(sample_json, *patches)
     changed, tested = jp.patch()
     assert changed is None
-    assert tested is False
+    assert tested[0] is False
 
 
 def test_op_test_number_equal():
@@ -267,7 +273,7 @@ def test_op_test_number_equal():
     jp = JSONPatcher(sample_json, *patches)
     changed, tested = jp.patch()
     assert changed is None
-    assert tested is True
+    assert tested[0] is True
 
 
 def test_op_test_number_unequal():
@@ -278,7 +284,7 @@ def test_op_test_number_unequal():
     jp = JSONPatcher(sample_json, *patches)
     changed, tested = jp.patch()
     assert changed is None
-    assert tested is False
+    assert tested[0] is False
 
 
 def test_op_test_list_equal():
@@ -290,7 +296,7 @@ def test_op_test_list_equal():
     jp = JSONPatcher(sample_json, *patches)
     changed, tested = jp.patch()
     assert changed is True
-    assert tested is True
+    assert tested[0] is True
 
 
 def test_op_test_wildcard():
@@ -301,7 +307,7 @@ def test_op_test_wildcard():
     jp = JSONPatcher(sample_json, *patches)
     changed, tested = jp.patch()
     assert changed is None
-    assert tested is True
+    assert tested[0] is True
 
 
 def test_op_test_wildcard_not_found():
@@ -312,7 +318,51 @@ def test_op_test_wildcard_not_found():
     jp = JSONPatcher(sample_json, *patches)
     changed, tested = jp.patch()
     assert changed is None
-    assert tested is False
+    assert tested[0] is False
+
+
+def test_op_test_wildcard_list_first():
+    """Should find an element in the 'bar' list with the matching value."""
+    patches = [
+        {"op": "test", "path": "/3/bar/*", "value": "foo"}
+    ]
+    jp = JSONPatcher(sample_json, *patches)
+    changed, tested = jp.patch()
+    assert changed is None
+    assert tested[0] is True
+
+
+def test_op_test_wildcard_list_middle():
+    """Should find an element in the 'bar' list with the matching value."""
+    patches = [
+        {"op": "test", "path": "/3/bar/*", "value": "baz"}
+    ]
+    jp = JSONPatcher(sample_json, *patches)
+    changed, tested = jp.patch()
+    assert changed is None
+    assert tested[0] is True
+
+
+def test_op_test_wildcard_list_last():
+    """Should find an element in the 'bar' list with the matching value."""
+    patches = [
+        {"op": "test", "path": "/3/bar/*", "value": "bazb"}
+    ]
+    jp = JSONPatcher(sample_json, *patches)
+    changed, tested = jp.patch()
+    assert changed is None
+    assert tested[0] is True
+
+
+def test_op_test_wildcard_list_not_found():
+    """Should not find an element in the 'bar' list with the matching value."""
+    patches = [
+        {"op": "test", "path": "/3/bar/*", "value": "no_foo"}
+    ]
+    jp = JSONPatcher(sample_json, *patches)
+    changed, tested = jp.patch()
+    assert changed is None
+    assert tested[0] is False
 
 
 def test_op_test_multiple_tests():
@@ -324,7 +374,8 @@ def test_op_test_multiple_tests():
     jp = JSONPatcher(sample_json, *patches)
     changed, tested = jp.patch()
     assert changed is None
-    assert tested is False
+    assert all(test for test in tested) is False
+   #assert tested is False
 
 
 def test_op_test_nonexistent_member():
@@ -335,4 +386,4 @@ def test_op_test_nonexistent_member():
     jp = JSONPatcher(sample_json, *patches)
     changed, tested = jp.patch()
     assert changed is None
-    assert tested is False
+    assert tested[0] is False

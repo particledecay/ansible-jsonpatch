@@ -290,10 +290,19 @@ There are two special notations:
         value: "The Last Samurai"
 ```
 
+### Examples
+For more examples of how to use this module see `exmaples` folder.
+
 ## Testing
-Testing is simple if you have pytest installed:
+
+### create virtual environment
+``` bash
+python3 -m venv .venv
+.venv/bin/python3 -m pip install -U ansible pytest
+```
+Testing is simple once you have pytest installed:
 ```bash
-pytest
+.venv/bin/py.test -v
 ```
 Note you may have to copy the `json_patch.py` file into your Ansible installation's `lib/ansible/modules/files/` dir.
 

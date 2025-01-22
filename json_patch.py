@@ -4,7 +4,6 @@
 # Copyright: (c) 2019, Joey Espinosa <jlouis.espinosa@gmail.com>
 # Copyright: (c) 2019, Ansible Project
 # MIT License (https://opensource.org/licenses/MIT)
-
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
@@ -246,7 +245,9 @@ class PatchManager(object):
         changed, tested = self.patcher.patch()
         result = {'changed': changed}
         if tested is not None:
-            result['tested'] = tested
+            print(tested)
+            result['tested'] = tested[0]
+            result['object'] = tested[1]
         if result['changed']:  # let's write the changes
             dump_kwargs = {}
             if self.pretty_print:
@@ -339,12 +340,16 @@ class JSONPatcher(object):
             # attach object to patch operation (helpful for recursion)
             patch['obj'] = self.obj
             new_obj, changed, tested = getattr(self, op)(**patch)
-            if changed or op == "remove":  # 'remove' will fail if we don't actually remove anything
+            if changed or op in ["remove", "add", "move"]:  # 'remove', 'add' and 'move' will fail if we don't actually remove anything
                 modified = bool(changed)
                 if modified is True:
                     self.obj = new_obj
             if tested is not None:
-                test_result = False if test_result is False else tested  # one false test fails everything
+                print(f"hej {tested}")
+                if test_result is None:
+                    test_result = (tested, new_obj)  # one false test fails everything
+                else:
+                    test_result += (tested, new_obj)
         return modified, test_result
 
     def _get(self, path, obj, **discard):
@@ -520,7 +525,13 @@ class JSONPatcher(object):
         next_obj = obj
         for idx, elem in enumerate(elements):
             if elem == "*":  # wildcard
+                # print(f"elem==*: {next_obj} {type(next_obj)}")
                 if not isinstance(next_obj, list):
+                    return obj, None, False
+                # last element and test is '*' then just check if value is in list
+                if '/'.join(elements[(idx + 1):]) == '' and value in next_obj:
+                    return obj, None, True
+                elif '/'.join(elements[(idx + 1):]) == '' and value not in next_obj:
                     return obj, None, False
                 for sub_obj in next_obj:
                     dummy, _, found = self.test('/'.join(elements[(idx + 1):]), value, sub_obj)
