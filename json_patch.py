@@ -347,11 +347,16 @@ class JSONPatcher(object):
                 test_result = False if test_result is False else tested  # one false test fails everything
         return modified, test_result
 
+    @staticmethod
+    def _unescape(token):
+        return token.replace('~1', '/').replace('~0', '~')
+
     def _get(self, path, obj, **discard):
         """Return a value at 'path'."""
         elements = path.lstrip('/').split('/')
         next_obj = obj
         for idx, elem in enumerate(elements):
+            elem = self._unescape(elem)
             try:
                 next_obj = next_obj[elem]
             except KeyError:
@@ -375,6 +380,7 @@ class JSONPatcher(object):
         chg = False
         path = path.lstrip('/')
         if "/" not in path:  # recursion termination
+            path = self._unescape(path)
             if isinstance(obj, dict):
                 old_value = obj.get(path)
                 obj[path] = value
@@ -397,6 +403,7 @@ class JSONPatcher(object):
         else:  # traverse obj until last path member
             elements = path.split('/')
             path, remaining = elements[0], '/'.join(elements[1:])
+            path = self._unescape(path)
 
             next_obj = None
             if isinstance(obj, dict):
@@ -424,6 +431,7 @@ class JSONPatcher(object):
         removed = None
         path = path.lstrip('/')
         if "/" not in path:  # recursion termination
+            path = self._unescape(path)
             try:
                 removed = obj.pop(path)
             except KeyError:
@@ -439,6 +447,7 @@ class JSONPatcher(object):
         else:  # traverse obj until last path member
             elements = path.split('/')
             path, remaining = elements[0], '/'.join(elements[1:])
+            path = self._unescape(path)
 
             next_obj = None
             if isinstance(obj, dict):
@@ -519,6 +528,7 @@ class JSONPatcher(object):
         elements = path.lstrip('/').split('/')
         next_obj = obj
         for idx, elem in enumerate(elements):
+            elem = self._unescape(elem)
             if elem == "*":  # wildcard
                 if not isinstance(next_obj, list):
                     return obj, None, False
