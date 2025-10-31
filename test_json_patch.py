@@ -22,7 +22,7 @@ def test_op_add_foo_four():
     patches = [
         {"op": "add", "path": "/0/foo/four", "value": 4}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     changed, tested = jp.patch()
     assert changed is True
     assert tested is None
@@ -34,7 +34,7 @@ def test_op_add_object_list():
     patches = [
         {"op": "add", "path": "/2/baz/0", "value": {"foo": "kiwis", "bar": "strawberries"}}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     changed, tested = jp.patch()
     assert changed is True
     assert tested is None
@@ -46,7 +46,7 @@ def test_op_add_object_end_of_list():
     patches = [
         {"op": "add", "path": "/2/baz/-", "value": {"foo": "raspberries", "bar": "blueberries"}}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     changed, tested = jp.patch()
     assert changed is True
     assert tested is None
@@ -58,7 +58,7 @@ def test_op_add_replace_existing_value():
     patches = [
         {"op": "add", "path": "/1/bar/three", "value": 10}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     changed, tested = jp.patch()
     assert changed is True
     assert tested is None
@@ -70,12 +70,72 @@ def test_op_add_ignore_existing_value():
     patches = [
         {"op": "add", "path": "/1/bar/one", "value": 1}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     changed, tested = jp.patch()
     assert changed is False
     assert tested is None
     assert jp.obj[1]['bar']['one'] == 1
 
+def test_op_add_no_create_parent():
+    """Should fail to add member to non-existent parent objects."""
+    patches = [
+        {"op": "add", "path": "/1/parent/should/create", "value": False}
+    ]
+    jp = JSONPatcher(sample_json, False, *patches)
+    raised = False
+    try:
+        changed, tested = jp.patch()
+    except PathError:
+        raised = True
+    assert raised is True
+
+def test_op_add_create_parent():
+    """Should add the non-existent parent objects, and set the value on the child member."""
+    patches = [
+        {"op": "add", "path": "/1/parent/should/create", "value": True}
+    ]
+    jp = JSONPatcher(sample_json, True, *patches)
+    changed, tested = jp.patch()
+    assert changed is True
+    assert tested is None
+    assert jp.obj[1]['parent']['should']['create'] == True
+
+def test_op_add_create_parent_nonzero():
+    """Should fail to add the non-existent parent list/array."""
+    patches = [
+        {"op": "add", "path": "/1/parent/should/5/fail", "value": True}
+    ]
+    jp = JSONPatcher(sample_json, True, *patches)
+    raised = False
+    try:
+        changed, tested = jp.patch()
+    except PathError:
+        raised = True
+    assert raised is True
+
+def test_op_add_create_parent_zero():
+    """Should add the non-existent parent list and empty array."""
+    patches = [
+        {"op": "add", "path": "/1/parent/should/0/create", "value": True}
+    ]
+    jp = JSONPatcher(sample_json, True, *patches)
+    changed, tested = jp.patch()
+    assert changed is True
+    assert tested is None
+    assert isinstance(jp.obj[1]['parent']['should'], list)
+    assert jp.obj[1]['parent']['should'][0]['create'] == True
+
+def test_op_add_create_parent_hyphen():
+    """Should add the non-existent parent list and empty array."""
+    patches = [
+        {"op": "add", "path": "/1/parent/should/-/create", "value": True}
+    ]
+    jp = JSONPatcher(sample_json, True, *patches)
+    changed, tested = jp.patch()
+    assert changed is True
+    assert tested is None
+    assert isinstance(jp.obj[1]['parent']['should'], list)
+    assert jp.obj[1]['parent']['should'][0]['create'] == True
 
 # OPERATION: REMOVE
 def test_op_remove_foo_three():
@@ -83,7 +143,7 @@ def test_op_remove_foo_three():
     patches = [
         {"op": "remove", "path": "/0/foo/three"}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     changed, tested = jp.patch()
     assert changed is True
     assert tested is None
@@ -95,7 +155,7 @@ def test_op_remove_baz_list_member():
     patches = [
         {"op": "remove", "path": "/2/baz/2"}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     changed, tested = jp.patch()
     assert changed is True
     assert tested is None
@@ -109,7 +169,7 @@ def test_op_remove_fail_on_nonexistent_path():
     patches = [
         {"op": "remove", "path": "/0/qux/one"}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     with pytest.raises(PathError):
         jp.patch()
 
@@ -119,7 +179,7 @@ def test_op_remove_unchanged_on_nonexistent_member():
     patches = [
         {"op": "remove", "path": "/0/foo/four"}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     changed, tested = jp.patch()
     assert changed is False
     assert tested is None
@@ -131,7 +191,7 @@ def test_op_replace_foo_three():
     patches = [
         {"op": "replace", "path": "/0/foo/three", "value": "booyah"}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     changed, tested = jp.patch()
     assert changed is True
     assert tested is None
@@ -143,7 +203,7 @@ def test_op_replace_fail_on_nonexistent_path_or_member():
     patches = [
         {"op": "replace", "path": "/0/foo/four", "value": 4}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     with pytest.raises(PathError):
         jp.patch()
 
@@ -154,7 +214,7 @@ def test_op_move_foo_three_bar_four():
     patches = [
         {"op": "move", "from": "/0/foo/three", "path": "/1/bar/four"}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     changed, tested = jp.patch()
     assert changed is True
     assert tested is None
@@ -167,7 +227,7 @@ def test_op_move_baz_list_foo():
     patches = [
         {"op": "move", "from": "/2/baz", "path": "/0/foo/fruits"}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     changed, tested = jp.patch()
     assert changed is True
     assert tested is None
@@ -180,7 +240,7 @@ def test_op_move_unchanged_on_nonexistent():
     patches = [
         {"op": "move", "from": "/0/foo/four", "path": "/1/bar/four"}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     changed, tested = jp.patch()
     assert changed is False
     assert tested is None
@@ -191,7 +251,7 @@ def test_op_move_foo_object_end_of_list():
     patches = [
         {"op": "move", "from": "/0/foo/three", "path": "/2/baz/-"}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     changed, tested = jp.patch()
     assert changed is True
     assert tested is None
@@ -205,7 +265,7 @@ def test_op_copy_foo_three_bar_four():
     patches = [
         {"op": "copy", "from": "/0/foo/three", "path": "/1/bar/four"}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     changed, tested = jp.patch()
     assert changed is True
     assert tested is None
@@ -218,7 +278,7 @@ def test_op_copy_baz_list_bar():
     patches = [
         {"op": "copy", "from": "/2/baz", "path": "/0/foo/fruits"}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     changed, tested = jp.patch()
     assert changed is True
     assert tested is None
@@ -231,7 +291,7 @@ def test_op_copy_fail_on_nonexistent_member():
     patches = [
         {"op": "copy", "from": "/1/bar/four", "path": "/0/foo/fruits"}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     with pytest.raises(PathError):
         jp.patch()
 
@@ -242,7 +302,7 @@ def test_op_test_string_equal():
     patches = [
         {"op": "test", "path": "/2/baz/0/foo", "value": "apples"}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     changed, tested = jp.patch()
     assert changed is None
     assert tested is True
@@ -253,7 +313,7 @@ def test_op_test_string_unequal():
     patches = [
         {"op": "test", "path": "/2/baz/0/foo", "value": "bananas"}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     changed, tested = jp.patch()
     assert changed is None
     assert tested is False
@@ -264,7 +324,7 @@ def test_op_test_number_equal():
     patches = [
         {"op": "test", "path": "/0/foo/one", "value": 1}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     changed, tested = jp.patch()
     assert changed is None
     assert tested is True
@@ -275,7 +335,7 @@ def test_op_test_number_unequal():
     patches = [
         {"op": "test", "path": "/0/foo/one", "value": "bananas"}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     changed, tested = jp.patch()
     assert changed is None
     assert tested is False
@@ -287,7 +347,7 @@ def test_op_test_list_equal():
         {"op": "add", "path": "/0/foo/compare", "value": [1, 2, 3]},
         {"op": "test", "path": "/0/foo/compare", "value": [1, 2, 3]}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     changed, tested = jp.patch()
     assert changed is True
     assert tested is True
@@ -298,7 +358,7 @@ def test_op_test_wildcard():
     patches = [
         {"op": "test", "path": "/2/baz/*/foo", "value": "grapes"}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     changed, tested = jp.patch()
     assert changed is None
     assert tested is True
@@ -309,7 +369,7 @@ def test_op_test_wildcard_not_found():
     patches = [
         {"op": "test", "path": "/2/baz/*/bar", "value": "rocks"}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     changed, tested = jp.patch()
     assert changed is None
     assert tested is False
@@ -321,7 +381,7 @@ def test_op_test_multiple_tests():
         {"op": "test", "path": "/0/foo/one", "value": 2},
         {"op": "test", "path": "/1/bar/one", "value": 1}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     changed, tested = jp.patch()
     assert changed is None
     assert tested is False
@@ -332,7 +392,7 @@ def test_op_test_nonexistent_member():
     patches = [
         {"op": "test", "path": "/10/20/foo", "value": "bar"}
     ]
-    jp = JSONPatcher(sample_json, *patches)
+    jp = JSONPatcher(sample_json, False, *patches)
     changed, tested = jp.patch()
     assert changed is None
     assert tested is False
