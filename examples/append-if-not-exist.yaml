@@ -1,0 +1,48 @@
+---
+- name: Append value to list if it does not already exist
+  hosts: local
+  gather_facts: false
+  become: false
+  vars:
+      jsonfile: "/tmp/example-append-if-not-exist.json"
+      json_keys:
+         - key: "/foo/-"
+           value: "bar"
+           test: "/foo/*"
+  tasks:
+    - name: "Ensure json {{jsonfile}} file exists"
+      ansible.builtin.copy:
+        content: '{"foo": []}'
+        dest: "{{jsonfile}}"
+        force: true
+
+    - name: Check if key exists
+      json_patch:
+        src:  "{{jsonfile}}"
+        operations:
+          - op: test
+            path: "{{ item.test }}"
+            value: "{{ item.value }}"
+      loop: "{{json_keys}}"
+      register: foo_result
+      when:
+        - item.test is defined
+
+    - name: debug msgs from the results of test
+      debug:
+        msg: "{{ foo_result.results | selectattr('item.key', 'equalto', item.key) | list | map(attribute='tested') | first }}"
+      loop: "{{json_keys}}"
+      when:
+        - item.test is defined
+
+    - name: "append key/values to {{jsonfile}}"
+      json_patch:
+        src:  "{{jsonfile}}"
+        pretty: true
+        operations:
+          - op: add
+            path: "{{ item.key }}"
+            value: "{{ item.value }}"
+      loop: "{{json_keys}}"
+      when:
+        - item.test is not defined or (item.test is defined and not foo_result.results | selectattr('item.key', 'equalto', item.key) | list | map(attribute='tested') | first)
