@@ -355,6 +355,8 @@ class JSONPatcher(object):
                     self.obj = new_obj
             if tested is not None:
                 test_result = False if test_result is False else tested  # one false test fails everything
+        if op != "test" and modified is None:
+            modified = False
         return modified, test_result
 
     def _get(self, path, obj, **discard):
