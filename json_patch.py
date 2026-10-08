@@ -188,8 +188,7 @@ import os
 import tempfile
 
 from ansible.module_utils import basic
-from ansible.module_utils._text import to_bytes, to_native
-
+from ansible.module_utils.common.text.converters import to_bytes, to_native
 
 def set_module_args(args):
     """For dynamic module args (such as for testing)."""
